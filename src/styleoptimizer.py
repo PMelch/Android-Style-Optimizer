@@ -65,7 +65,14 @@ class Style(dict):
 
     
     def __str__(self):
-        return "TODO"
+        out = "<style name=\"%s\" "%self.name
+        if self.parent:
+            out += "parent=\"%s\""%self.parent
+        out += " >\n"
+        for item, value in self.items():
+            out += "  <item name=\"%s\">%s</item>\n"%(item, value)
+        out += "</style>\n"
+        return out
     
 
 class StyleOptimizer(object):
@@ -85,23 +92,23 @@ class StyleOptimizer(object):
         self._style_locations = dict()
         self._warnings = 0
         
-        for folder, _, files in os.walk(resfolder):
-            foldername = os.path.basename(folder)
-            if not foldername.startswith("values"):
-                continue
-            if options.verbose:
-                print foldername
-            for filename in files:
-                if filename.endswith(".xml"):
-                    self._extract_styles(foldername, os.path.join(folder, filename))
                     
-                    
-        #pprint (self._style_locations)  
+        self._fetch_styles(resfolder)
         self._optimize()
         
         print "Warnings:",self._warnings
 
 
+    def _fetch_styles(self, resfolder):
+        for folder, _, files in os.walk(resfolder):
+            foldername = os.path.basename(folder)
+            if not foldername.startswith("values"):
+                continue
+            if self._options.verbose:
+                print foldername
+            for filename in files:
+                if filename.endswith(".xml"):
+                    self._extract_styles(foldername, os.path.join(folder, filename))
 
     def _extract_styles(self, res_type, filepath):
         try:
@@ -204,21 +211,25 @@ class StyleOptimizer(object):
             
             for style_loc in locs:
                 style = self._styles[style_loc][style_name]
-                if not style_loc in self._out_files:
-                    self._out_files[style_loc] = []
-                self._out_files[style_loc].append(Entry(style.filename, varname, item_type, style[item]))
+                self._prepare_dict(style_loc, style.filename)
+                self._out_files[style_loc][style.filename].append(Entry(style.filename, varname, item_type, style[item]))
                 
-        if not "values" in self._out_files:
-            self._out_files["values"] = []
-        self._out_files["values"].append(merged_style)
+        self._prepare_dict("values", merged_style.filename)
+        self._out_files["values"][merged_style.filename].append(merged_style)
         print "  ",mergable_items
         
+    def _prepare_dict(self, style_loc, filename):
+        if not style_loc in self._out_files:
+            self._out_files[style_loc] = dict()
+        if not filename in self._out_files[style_loc]:
+            self._out_files[style_loc][filename] = []
+             
     def _write_style_unchanged(self, style_name):
         locs = self._style_locations[style_name]
         for style_loc in locs:
-            if not style_loc in self._out_files:
-                self._out_files[style_loc] = []
-            self._out_files[style_loc].append(self._styles[style_loc][style_name]) 
+            style = self._styles[style_loc][style_name]
+            self._prepare_dict(style_loc, style.filename)
+            self._out_files[style_loc][style.filename].append(style) 
         
     
     def _get_save_varname(self, name):
@@ -244,6 +255,19 @@ class StyleOptimizer(object):
                 
                 
         pprint (self._out_files)
+        if self._options.outfolder:
+            outbase = self._options.outfolder
+            for value_folder, filenames in self._out_files.items():
+                for filename in filenames:
+                    outfilename = os.path.join(outbase, value_folder, "_"+filename)
+                    try:
+                        os.makedirs(os.path.dirname(outfilename))
+                    except: pass
+                    outfile = open(outfilename, "wt")
+                    for entry in self._out_files[value_folder][filename]:
+                        outfile.write(str(entry))
+                        outfile.write("\n")
+                    outfile.close()
                 
     def _warning(self, msg):
         self._warnings += 1
