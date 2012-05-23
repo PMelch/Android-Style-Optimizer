@@ -38,6 +38,7 @@ in values-xhadpi/styles.xml
     
     
 the optimize process would create a styles.xml file in values containing:
+
     <style name="sample_style">
     	<item name="android:layout_width">@dimen/SampleStyle_layoutWidth</item>
     	<item name="android:layout_height">100dp</item>
@@ -46,12 +47,16 @@ the optimize process would create a styles.xml file in values containing:
 and two styles.xml file in values-xlarge and values-xhdpi, resp.
         
 values-xlarge/styles.xml:
-
+    
+    ...
     <dimen name="SampleStyle_layoutWidth">100dp</dimen>
+    ...
          
 values-xhdpi/styles.xml:
 
+	...
 	<dimen name="SampleStyle_layoutWidth">200dp</dimen>
+	...
      
 Style declarations where one version has - say - a dimension as layout width, but the other
 version has "match_parent" cannot be merged, since a dimen item cannot hold the value "match_parent".
