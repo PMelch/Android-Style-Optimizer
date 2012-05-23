@@ -25,7 +25,8 @@ def getText(nodelist):
     return ''.join(rc)
 
 class Entry(object):
-    def __init__(self, name, value_type, value):
+    def __init__(self, filename, name, value_type, value):
+        self._filename = filename
         self._name = name
         self._type = value_type
         self._value = value
@@ -138,13 +139,6 @@ class StyleOptimizer(object):
             return Types.ITEM_TYPE_INTEGER
         return Types.ITEM_TYPE_OTHER
 
-    def _write_style_unchanged(self, style_name):
-        locs = self._style_locations[style_name]
-        for style_loc in locs:
-            if not style_loc in self._out_files:
-                self._out_files[style_loc] = []
-            self._out_files[style_loc].append(self._styles[style_loc][style_name]) 
-        
     
     def _merge_style(self, style_name):
         mergable_items = set()
@@ -194,7 +188,8 @@ class StyleOptimizer(object):
                 if not same_value and item_type in [Types.ITEM_TYPE_COLOR, Types.ITEM_TYPE_DIMEN, Types.ITEM_TYPE_INTEGER]:
                     mergable_items.add((name, item_type))
 
-        merged_style = Style("values", name=found_style.name, parent=found_style.parent)
+        merged_style = Style(found_style.filename, name=found_style.name, parent=found_style.parent)
+        merged_style.filename = found_style.filename
         merged_style.update(found_style)
         for item, item_type in mergable_items:
             varname = ""
@@ -209,14 +204,21 @@ class StyleOptimizer(object):
             
             for style_loc in locs:
                 style = self._styles[style_loc][style_name]
-                if not style.filename in self._out_files:
-                    self._out_files[style.filename] = []
-                self._out_files[style.filename].append(Entry(varname, item_type, style[item]))
+                if not style_loc in self._out_files:
+                    self._out_files[style_loc] = []
+                self._out_files[style_loc].append(Entry(style.filename, varname, item_type, style[item]))
                 
-        if not merged_style.filename in self._out_files:
-            self._out_files[merged_style.filename] = []
-        self._out_files[merged_style.filename].append(merged_style)
+        if not "values" in self._out_files:
+            self._out_files["values"] = []
+        self._out_files["values"].append(merged_style)
         print "  ",mergable_items
+        
+    def _write_style_unchanged(self, style_name):
+        locs = self._style_locations[style_name]
+        for style_loc in locs:
+            if not style_loc in self._out_files:
+                self._out_files[style_loc] = []
+            self._out_files[style_loc].append(self._styles[style_loc][style_name]) 
         
     
     def _get_save_varname(self, name):
