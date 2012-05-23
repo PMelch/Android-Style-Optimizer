@@ -4,17 +4,17 @@ Android-Style-Optimizer
 a tool that runs various optimization steps on a set of android style xml files.
 
 
-Usage: asop.py [options] res_folder
+    Usage: asop.py [options] res_folder
 
-Options:
-  -h, --help            show this help message and exit
-  -v, --verbose         if set, enables verbose output.
-  -o OUTFOLDER, --outfolder=OUTFOLDER
-                        if set, writes the generated files to the specified
-                        out folder. if no folder is specified, no output is
-                        generated.
+    Options:
+      -h, --help            show this help message and exit
+      -v, --verbose         if set, enables verbose output.
+      -o OUTFOLDER, --outfolder=OUTFOLDER
+                            if set, writes the generated files to the specified
+                            out folder. if no folder is specified, no output is
+                            generated.
                         
-res_folder: is the folder where there are the values[-xxxx] folders.
+    res_folder: is the folder where there are the values[-xxxx] folders.
 
           
 the optimizer tries to handle sitations where you have the same style defined in different 
