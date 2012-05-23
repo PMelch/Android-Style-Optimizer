@@ -1,12 +1,12 @@
 '''
 Created on 22.05.2012
 
-@author: peter
+@author: Peter Melchart
+
 '''
+
 import styleoptimizer
 import sys
-
-
 
 
 if __name__ == '__main__':

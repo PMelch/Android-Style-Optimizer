@@ -1,8 +1,9 @@
 '''
 Created on 22.05.2012
 
-@author: peter
+@author: Peter Melchart
 '''
+
 import os
 from xml.dom.minidom import parse
 from pprint import pprint
@@ -25,6 +26,12 @@ def getText(nodelist):
     return ''.join(rc)
 
 class Entry(object):
+    '''
+    holds one value item used to refactor out the different values from one common style.
+    can be either a dimen, color or integer value.
+    
+    '''
+    
     def __init__(self, filename, name, value_type, value):
         self._filename = filename
         self._name = name
@@ -32,19 +39,26 @@ class Entry(object):
         self._value = value
         
     def __str__(self):
+        return "%s, %s, %s, %s"%(self._filename, self._name, self._value, self._type)
+    
+    def out(self):
         if self._type == Types.ITEM_TYPE_DIMEN:
-            return "<dimen name=\"%s\">%s</dimen>"%(self._name, self._value)
+            return "    <dimen name=\"%s\">%s</dimen>"%(self._name, self._value)
         elif self._type == Types.ITEM_TYPE_COLOR:
-            return "<color name=\"%s\">%s</color>"%(self._name, self._value)
+            return "    <color name=\"%s\">%s</color>"%(self._name, self._value)
         elif self._type == Types.ITEM_TYPE_INTEGER:
-            return "<item name=\"%s\" type=\"integer\">%s</item>"%(self._name, self._value)
+            return "    <item name=\"%s\" type=\"integer\">%s</item>"%(self._name, self._value)
         return ""
+    
     def __repr__(self):
         return self.__str__()
 
 class Style(dict):
     '''
-    
+    holds the elements of one style entry.
+    with information about the filename(the xml file the style was defined in), the
+    name and the parent (if defined)
+     
     '''
     
     def __init__(self, filename, element=None, name=None, parent=None):
@@ -65,25 +79,83 @@ class Style(dict):
 
     
     def __str__(self):
-        out = "<style name=\"%s\" "%self.name
+        return "%s (%s) @ %s :\n  %s"%(self.name, self.parent, self.filename, ",\n  ".join([key+" "+val for key, val in self.items()]))
+    
+    def out(self):
+        out = "    <style name=\"%s\" "%self.name
         if self.parent:
             out += "parent=\"%s\""%self.parent
         out += " >\n"
         for item, value in self.items():
-            out += "  <item name=\"%s\">%s</item>\n"%(item, value)
-        out += "</style>\n"
+            out += "        <item name=\"%s\">%s</item>\n"%(item, value)
+        out += "    </style>\n"
         return out
+    
+    def __repr__(self):
+        return self.__str__()
     
 
 class StyleOptimizer(object):
     '''
+    Handles the style optimization process.
+    
+    call optimize(resfolder, options), where
+      resfolder is the folder where there are the values[-xxxx] folders.
+      options is the object holding:
+          verbose: if true, verbose output is generated
+          outfolder: the path where the optimized xml files should be generated.
+          
+    the optimizer tries to handle sitations where you have the same style defined in different 
+    xml files containing different size, color or integer values.
+    
+    example:
+    
+     in values-xlarge/styles.xml:
+         <style name="sample_style">
+             <item name="android:layout_width">100dp</item>
+             <item name="android:layout_height">100dp</item>
+         <style>
+         
+     in values-xhadpi/styles.xml
+         <style name="sample_style">
+             <item name="android:layout_width">200dp</item>
+             <item name="android:layout_height">100dp</item>
+         <style>
+    
+    
+     the optimize process would create a styles.xml file in values containing:
+         <style name="sample_style">
+             <item name="android:layout_width">@dimen/SampleStyle_layoutWidth</item>
+             <item name="android:layout_height">100dp</item>
+         <style>
+         
+        and two styles.xml file in values-xlarge and values-xhdpi, resp.
+        
+        values-xlarge/styles.xml:
+             <dimen name="SampleStyle_layoutWidth">100dp</dimen>
+         
+        values-xhdpi/styles.xml:
+             <dimen name="SampleStyle_layoutWidth">200dp</dimen>
+         
+     
+     
+     Style declarations where one version has - say - a dimension as layout width, but the other
+     version has "match_parent" cannot be merged, since a dimen item cannot hold the value "match_parent".
+     
+     Same goes for styles that have different items defined.
     
     '''
+    
     _dimen_rex = re.compile(r"^(?:@.*?dimen.*|-?\d+\s*(?:sd?|dp?|pt|px|mm|in)$)")
     _color_rex = re.compile(r"^(?:@.*?color.*|#[\da-f]{3}|#[\da-f]{4}|#[\da-f]{6}|#[\da-f]{8})$", re.I)
     _int_rex = re.compile(r"^-?\d+$")
 
     def optimize(self, resfolder, options):
+        '''
+        call this method.
+        
+        '''
+        
         self._options = options
         if options.verbose:
             print "Root folder: ",os.path.abspath(resfolder)
@@ -100,6 +172,11 @@ class StyleOptimizer(object):
 
 
     def _fetch_styles(self, resfolder):
+        '''
+        retrieves all style declarations in all values subfolder in the given resfolder.        
+        
+        '''
+        
         for folder, _, files in os.walk(resfolder):
             foldername = os.path.basename(folder)
             if not foldername.startswith("values"):
@@ -111,6 +188,11 @@ class StyleOptimizer(object):
                     self._extract_styles(foldername, os.path.join(folder, filename))
 
     def _extract_styles(self, res_type, filepath):
+        '''
+        extracts styles from one xml file and stores them in self._styles and self._style_locations
+        
+        '''
+        
         try:
             dom = parse(filepath)
         except:
@@ -138,6 +220,17 @@ class StyleOptimizer(object):
             
         
     def _get_item_type(self, value):
+        '''
+        returns the value type for the given type. possible values are:
+        
+        Types.ITEM_TYPE_DIMEN (1)
+        Types.ITEM_TYPE_COLOR (2)
+        Types.ITEM_TYPE_INTEGER (3)
+        Types.ITEM_TYPE_OTHER (0)
+        
+        
+        '''
+        
         if self._dimen_rex.match(value):
             return Types.ITEM_TYPE_DIMEN
         if self._color_rex.match(value):
@@ -148,8 +241,17 @@ class StyleOptimizer(object):
 
     
     def _merge_style(self, style_name):
+        '''
+        tries to merge the style with the given name.
+        if the style cannot get merged into one style the 
+        style will be written to it's style file in the output folder.
+        
+        '''
+        
+        
         mergable_items = set()
-        print style_name
+        if self._options.verbose:
+            print "Trying to merge",style_name
         
         locs = self._style_locations[style_name]
         num_items = None
@@ -170,8 +272,8 @@ class StyleOptimizer(object):
         for style_loc in locs:
             style = self._styles[style_loc][style_name]
             found_style = style
-            same_value = True
             for name, value in style.items():
+                same_value = True
                 item_type = self._get_item_type(value)
                 for check_loc in locs:
                     if check_loc == style_loc:
@@ -206,7 +308,7 @@ class StyleOptimizer(object):
                 varname = "@dimen/"
             elif item_type == Types.ITEM_TYPE_INTEGER:
                 varname = "@integer/"
-            varname += self._get_save_varname(merged_style.name+"_"+item.replace("android:", ""))
+            varname += self._get_save_varname(merged_style.name+"-"+item.replace("android:", ""))
             merged_style[item] = varname 
             
             for style_loc in locs:
@@ -216,15 +318,28 @@ class StyleOptimizer(object):
                 
         self._prepare_dict("values", merged_style.filename)
         self._out_files["values"][merged_style.filename].append(merged_style)
-        print "  ",mergable_items
+        if self._options.verbose:
+            print "Mergable:  ",mergable_items
         
     def _prepare_dict(self, style_loc, filename):
+        '''
+        makes sure that self._out_files contains a key for style_loc
+        and that the value of style_loc contains a key for filename.
+        
+        '''
+        
         if not style_loc in self._out_files:
             self._out_files[style_loc] = dict()
         if not filename in self._out_files[style_loc]:
             self._out_files[style_loc][filename] = []
              
     def _write_style_unchanged(self, style_name):
+        '''
+        writes the style with the given name to all the files where it is defined.
+        this happens when a style cannot get merged
+        
+        '''
+        
         locs = self._style_locations[style_name]
         for style_loc in locs:
             style = self._styles[style_loc][style_name]
@@ -233,7 +348,16 @@ class StyleOptimizer(object):
         
     
     def _get_save_varname(self, name):
+        '''
+        returns a readable version of name.
+        converts names containing "_" into camel case names
+        with the last part ( the item name ) separated by a _
+        
+        '''
+        
         name = name.replace(".", "_")
+        if len(name)>0:
+            name = name[0].upper()+name[1:]
         while True:
             i = name.find("_")
             if i==-1:
@@ -241,9 +365,14 @@ class StyleOptimizer(object):
             if i>=len(name)-1:
                 break
             name = name[:i]+name[i+1].upper()+name[i+2:]
-        return name
+        return name.replace("-","_")
     
     def _optimize(self):
+        '''
+        tries to merge all styles and writes the files to the output folder (if present)
+        
+        '''
+        
         self._out_files = dict()
         
         for style_name, locs in self._style_locations.items():
@@ -254,7 +383,9 @@ class StyleOptimizer(object):
             self._merge_style(style_name)
                 
                 
-        pprint (self._out_files)
+        if self._options.verbose:
+            pprint (self._out_files)
+            
         if self._options.outfolder:
             outbase = self._options.outfolder
             for value_folder, filenames in self._out_files.items():
@@ -264,9 +395,12 @@ class StyleOptimizer(object):
                         os.makedirs(os.path.dirname(outfilename))
                     except: pass
                     outfile = open(outfilename, "wt")
+                    outfile.write("""<?xml version="1.0" encoding="utf-8"?>\n""")
+                    outfile.write("""<resources>\n""")
                     for entry in self._out_files[value_folder][filename]:
-                        outfile.write(str(entry))
+                        outfile.write(entry.out())
                         outfile.write("\n")
+                    outfile.write("""</resources>\n""")
                     outfile.close()
                 
     def _warning(self, msg):
