@@ -104,9 +104,11 @@ class StyleOptimizer(object):
     
     call optimize(resfolder, options), where
       resfolder is the folder where there are the values[-xxxx] folders.
+      outfolder: the path where the optimized xml files should be generated.
       options is the object holding:
           verbose: if true, verbose output is generated
-          outfolder: the path where the optimized xml files should be generated.
+          overwrite: if true, already present file will get overwritten, other an warning is shown
+          
           
     the optimizer tries to handle sitations where you have the same style defined in different 
     xml files containing different size, color or integer values.
@@ -153,12 +155,13 @@ class StyleOptimizer(object):
     _color_rex = re.compile(r"^(?:@.*?color.*|#[\da-f]{3}|#[\da-f]{4}|#[\da-f]{6}|#[\da-f]{8})$", re.I)
     _int_rex = re.compile(r"^-?\d+$")
 
-    def optimize(self, resfolder, options):
+    def optimize(self, resfolder, outfolder, options):
         '''
         call this method.
         
         '''
         
+        self._outfolder = outfolder
         self._options = options
         if options.verbose:
             print "Root folder: ",os.path.abspath(resfolder)
@@ -407,14 +410,17 @@ class StyleOptimizer(object):
         self._write_files()
 
     def _write_files(self):            
-        if self._options.outfolder:
-            outbase = self._options.outfolder
+        if self._outfolder:
+            outbase = self._outfolder
             for value_folder, filenames in self._out_files.items():
                 for filename in filenames:
-                    outfilename = os.path.join(outbase, value_folder, "_"+filename)
+                    outfilename = os.path.join(outbase, value_folder, filename)
                     try:
                         os.makedirs(os.path.dirname(outfilename))
                     except: pass
+                    if os.path.exists(outfilename) and not self._options.overwrite:
+                        self._warning("target file %s already exists. skipping."%outfilename)
+                        continue
                     outfile = open(outfilename, "wt")
                     outfile.write("""<?xml version="1.0" encoding="utf-8"?>\n""")
                     outfile.write("""<resources>\n""")
