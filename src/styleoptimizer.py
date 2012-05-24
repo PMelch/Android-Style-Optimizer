@@ -9,6 +9,9 @@ from xml.dom.minidom import parse
 from pprint import pprint
 import re
 
+
+__version__ = "0.1"
+
 class Types(object):
     ITEM_TYPE_DIMEN   = 1
     ITEM_TYPE_COLOR   = 2
@@ -163,6 +166,7 @@ class StyleOptimizer(object):
         self._styles = dict()
         self._style_locations = dict()
         self._warnings = 0
+        self._extra_nodes = dict()
         
                     
         self._fetch_styles(resfolder)
@@ -183,11 +187,14 @@ class StyleOptimizer(object):
                 continue
             if self._options.verbose:
                 print foldername
+                
+            self._extra_nodes[foldername] = dict()
+            
             for filename in files:
                 if filename.endswith(".xml"):
-                    self._extract_styles(foldername, os.path.join(folder, filename))
+                    self._extract_content(foldername, os.path.join(folder, filename))
 
-    def _extract_styles(self, res_type, filepath):
+    def _extract_content(self, res_type, filepath):
         '''
         extracts styles from one xml file and stores them in self._styles and self._style_locations
         
@@ -199,12 +206,23 @@ class StyleOptimizer(object):
             return 
         
         style_file = os.path.basename(filepath)
+        self._extra_nodes[res_type][style_file] = []
         
         if self._options.verbose:
             print "   ",style_file
         
-        style_elements = dom.getElementsByTagName("style")
-        for style_element in style_elements:
+        if dom.documentElement.nodeName != "resources":
+            return
+        
+        
+        for n in dom.documentElement.childNodes:
+            if n.nodeName=="style":
+                self._extract_style(res_type, style_file, n)
+            else:
+                if n.nodeType == n.ELEMENT_NODE:
+                    self._extra_nodes[res_type][style_file].append(n)
+            
+    def _extract_style(self, res_type, style_file, style_element):
             if not res_type in self._styles:
                 self._styles[res_type] = dict()
             style = Style(style_file, style_element)
@@ -385,7 +403,10 @@ class StyleOptimizer(object):
                 
         if self._options.verbose:
             pprint (self._out_files)
-            
+
+        self._write_files()
+
+    def _write_files(self):            
         if self._options.outfolder:
             outbase = self._options.outfolder
             for value_folder, filenames in self._out_files.items():
@@ -397,6 +418,11 @@ class StyleOptimizer(object):
                     outfile = open(outfilename, "wt")
                     outfile.write("""<?xml version="1.0" encoding="utf-8"?>\n""")
                     outfile.write("""<resources>\n""")
+                    outfile.write("""\n\n\n    <!-- original elements -->\n\n\n""")
+                    for node in self._extra_nodes[value_folder][filename]:
+                        outfile.write("    "+node.toxml())
+                        outfile.write("\n")
+                    outfile.write("""\n\n\n    <!-- created elements --> \n\n\n""")
                     for entry in self._out_files[value_folder][filename]:
                         outfile.write(entry.out())
                         outfile.write("\n")
