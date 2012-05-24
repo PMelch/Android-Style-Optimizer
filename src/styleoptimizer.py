@@ -275,6 +275,11 @@ class StyleOptimizer(object):
             print "Trying to merge",style_name
         
         locs = self._style_locations[style_name]
+        
+        if len(locs)==1 and locs[0]=="values":
+            # it's already a central style. skip
+            return
+        
         num_items = None
         for style_loc in locs:
             style = self._styles[style_loc][style_name]
