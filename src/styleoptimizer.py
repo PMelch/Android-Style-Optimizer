@@ -322,15 +322,15 @@ class StyleOptimizer(object):
         merged_style.filename = found_style.filename
         merged_style.update(found_style)
         for item, item_type in mergable_items:
-            varname = ""
+            res_type_prefix = ""
             if item_type == Types.ITEM_TYPE_COLOR:
-                varname = "@color/"
+                res_type_prefix = "@color/"
             elif item_type == Types.ITEM_TYPE_DIMEN:
-                varname = "@dimen/"
+                res_type_prefix = "@dimen/"
             elif item_type == Types.ITEM_TYPE_INTEGER:
-                varname = "@integer/"
-            varname += self._get_save_varname(merged_style.name+"-"+item.replace("android:", ""))
-            merged_style[item] = varname 
+                res_type_prefix = "@integer/"
+            varname = self._get_save_varname(merged_style.name+"-"+item.replace("android:", ""))
+            merged_style[item] = res_type_prefix+varname 
             
             for style_loc in locs:
                 style = self._styles[style_loc][style_name]
