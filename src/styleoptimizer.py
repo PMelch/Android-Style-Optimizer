@@ -369,8 +369,9 @@ class StyleOptimizer(object):
         locs = self._style_locations[style_name]
         for style_loc in locs:
             style = self._styles[style_loc][style_name]
-            self._prepare_dict(style_loc, style.filename)
-            self._out_files[style_loc][style.filename].append(style) 
+            #self._prepare_dict(style_loc, style.filename)
+            #self._out_files[style_loc][style.filename].append(style)
+            self._extra_nodes[style_loc][style.filename].append(style) 
         
     
     def _get_save_varname(self, name):
@@ -431,7 +432,10 @@ class StyleOptimizer(object):
                     outfile.write("""<resources>\n""")
                     outfile.write("""\n\n\n    <!-- original elements -->\n\n\n""")
                     for node in self._extra_nodes[value_folder][filename]:
-                        outfile.write("    "+node.toxml())
+                        if isinstance(node, Style):
+                            outfile.write(node.out())
+                        else:
+                            outfile.write("    "+node.toxml())
                         outfile.write("\n")
                     outfile.write("""\n\n\n    <!-- created elements --> \n\n\n""")
                     entries = self._out_files[value_folder][filename]
