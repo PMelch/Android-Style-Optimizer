@@ -28,7 +28,7 @@ def getText(nodelist):
             rc.append(node.data)
     return ''.join(rc)
 
-class Entry(object):
+class Variable(object):
     '''
     holds one value item used to refactor out the different values from one common style.
     can be either a dimen, color or integer value.
@@ -340,7 +340,7 @@ class StyleOptimizer(object):
             for style_loc in locs:
                 style = self._styles[style_loc][style_name]
                 self._prepare_dict(style_loc, style.filename)
-                self._out_files[style_loc][style.filename].append(Entry(style.filename, varname, item_type, style[item]))
+                self._out_files[style_loc][style.filename].append(Variable(style.filename, varname, item_type, style[item]))
                 
         self._prepare_dict("values", merged_style.filename)
         self._out_files["values"][merged_style.filename].append(merged_style)
@@ -434,9 +434,18 @@ class StyleOptimizer(object):
                         outfile.write("    "+node.toxml())
                         outfile.write("\n")
                     outfile.write("""\n\n\n    <!-- created elements --> \n\n\n""")
-                    for entry in self._out_files[value_folder][filename]:
-                        outfile.write(entry.out())
-                        outfile.write("\n")
+                    entries = self._out_files[value_folder][filename]
+                    # write all variable entries
+                    for entry in entries:
+                        if isinstance(entry, Variable):
+                            outfile.write(entry.out())
+                            outfile.write("\n")
+                    # write all style entries
+                    outfile.write("\n\n")
+                    for entry in entries:
+                        if isinstance(entry, Style):
+                            outfile.write(entry.out())
+                            outfile.write("\n")
                     outfile.write("""</resources>\n""")
                     outfile.close()
                 
