@@ -278,6 +278,7 @@ class StyleOptimizer(object):
         
         if len(locs)==1 and locs[0]=="values":
             # it's already a central style. skip
+            self._write_style_unchanged(style_name)
             return
         
         num_items = None
