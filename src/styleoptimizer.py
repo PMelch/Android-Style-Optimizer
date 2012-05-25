@@ -232,7 +232,7 @@ class StyleOptimizer(object):
             style_name = style.name
             # check if there was already a equally named style for that qualified resource type
             if style_name in self._styles[res_type]:
-                self._warning("the style %s is already defined in %s."%(style_name, self._styles[res_type][style_name].name))
+                self._warning("%s: the style is already defined in %s."%(style_name, self._styles[res_type][style_name].name))
             self._styles[res_type][style_name] = style
             
             if not style_name in self._style_locations:
@@ -288,8 +288,7 @@ class StyleOptimizer(object):
                 num_items = len(style)
             elif len(style) != num_items:
                 # different amount of items, cannot be merged automatically (for now).
-                if self._options.verbose:
-                    print "number of items differ for",style_name
+                self._warning("%s: number of items differ"%style_name)
                 # append to outfile
                 self._write_style_unchanged(style_name)
                 return 
@@ -308,13 +307,13 @@ class StyleOptimizer(object):
                     check_style = self._styles[check_loc][style_name]
                     check_value = check_style[name] 
                     if self._get_item_type(check_value) != item_type:
-                        self._warning("item types for %s differ in %s and %s (%s vs %s)"%(name, style_loc, check_loc, value, check_value))
+                        self._warning("%s: item types for %s differ in %s and %s (%s vs %s)"%(style_name, name, style_loc, check_loc, value, check_value))
                         self._write_style_unchanged(style_name)
                         return 
                     
                     if value!=check_value:
                         if item_type==Types.ITEM_TYPE_OTHER:
-                            self._warning("style not mergable. values differ for item %s (%s vs %s)"%(name, value, check_value))
+                            self._warning("%s: style not mergable. values differ for item %s (%s vs %s)"%(style_name, name, value, check_value))
                             self._write_style_unchanged(style_name)
                             return
                         else:

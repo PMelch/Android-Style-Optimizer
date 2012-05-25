@@ -9,13 +9,12 @@ a tool that runs various optimization steps on a set of android style xml files.
     Options:
       -h, --help            show this help message and exit
       -v, --verbose         if set, enables verbose output.
-      -o, --overwrite       if set, writes the generated files to the specified out
-                 		    folder. if no folder is specified, no output is generated.
+      -o, --overwrite       if set, generated files will overwrite already present files.
                                                     
     res_folder: is the folder where there are the values[-xxxx] folders.
     outfolder (optional): if set, writes the generated files to the specified
-                            out folder. if no folder is specified, no output is
-                            generated.
+                          out folder. if no folder is specified, no files are written.
+                          IMPORTANT: don't specify outfolder, if you just want to get the styles files analyzed.
 
           
 the optimizer tries to handle sitations where you have the same style defined in different 

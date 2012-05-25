@@ -13,7 +13,7 @@ if __name__ == '__main__':
     import optparse
     parser = optparse.OptionParser(usage="usage: %prog [options] res_folder outfolder", version=styleoptimizer.__version__)
     parser.add_option("-v", "--verbose", dest="verbose", action="store_true", default=False, help="if set, enables verbose output.")
-    parser.add_option("-o", "--overwrite", dest="overwrite", action="store_true", default=False, help="if set, writes the generated files to the specified out folder. if no folder is specified, no output is generated.")
+    parser.add_option("-o", "--overwrite", dest="overwrite", action="store_true", default=False, help="if set, generated files will overwrite already present files.")
     options, args = parser.parse_args()
     
     resfolder = args[0]
