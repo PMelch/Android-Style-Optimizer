@@ -16,6 +16,10 @@ if __name__ == '__main__':
     parser.add_option("-o", "--overwrite", dest="overwrite", action="store_true", default=False, help="if set, generated files will overwrite already present files.")
     options, args = parser.parse_args()
     
+    if not args:
+        parser.print_usage()
+        sys.exit(-1)
+    
     resfolder = args[0]
     outfolder = args[1] if len(args)>1 else None        
     

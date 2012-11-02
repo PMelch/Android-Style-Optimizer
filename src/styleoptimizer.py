@@ -160,11 +160,18 @@ class StyleOptimizer(object):
         call this method.
         
         '''
+
+        absresfolder = os.path.abspath(resfolder)
+
+        if not os.path.exists(absresfolder):
+            print "ERROR: Folder does not exists:",absresfolder
+            return
         
         self._outfolder = outfolder
         self._options = options
         if options.verbose:
-            print "Root folder: ",os.path.abspath(resfolder)
+            print "Root folder: ",absresfolder
+            
         
         self._styles = dict()
         self._style_locations = dict()
